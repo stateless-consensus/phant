@@ -65,6 +65,8 @@ pub const ExecutionPayload = struct {
                 .transactions_root = try lib.mpt.mptize(self.allocator, transactions.items[0..]),
                 .nonce = [_]u8{0} ** 8,
                 .withdrawals_root = try lib.mpt.mptize(self.allocator, withdrawals.items[0..]),
+                .blob_gas_used = self.blobGasUsed,
+                .excess_blob_gas = self.excessBlobGas,
             },
             .transactions = self.transactions,
             .withdrawals = self.withdrawals,

@@ -86,7 +86,7 @@ pub const Blockchain = struct {
         // TODO: disabled until logs bloom are calculated
         // if (!std.mem.eql(u8, &result.logs_bloom, &block.header.logs_bloom))
         //     return error.InvalidLogsBloom;
-        if (!std.mem.eql(u8, &result.withdrawals_root, &block.header.withdrawals_root))
+        if (!std.mem.eql(u8, &result.withdrawals_root, &block.header.withdrawals_root.?))
             return error.InvalidWithdrawalsRoot;
 
         // Note that we free and clone with the Blockchain allocator, and not the arena allocator.
@@ -108,12 +108,12 @@ pub const Blockchain = struct {
             prev_block.base_fee_per_gas
         else if (prev_block.gas_used > parent_gas_target) blk: {
             const gas_used_delta = prev_block.gas_used - parent_gas_target;
-            const base_fee_per_gas_delta = @max(prev_block.base_fee_per_gas * gas_used_delta / parent_gas_target / params.base_fee_max_change_denominator, 1);
-            break :blk prev_block.base_fee_per_gas + base_fee_per_gas_delta;
+            const base_fee_per_gas_delta = @max(prev_block.base_fee_per_gas.? * gas_used_delta / parent_gas_target / params.base_fee_max_change_denominator, 1);
+            break :blk prev_block.base_fee_per_gas.? + base_fee_per_gas_delta;
         } else blk: {
             const gas_used_delta = parent_gas_target - prev_block.gas_used;
-            const base_fee_per_gas_delta = prev_block.base_fee_per_gas * gas_used_delta / parent_gas_target / params.base_fee_max_change_denominator;
-            break :blk prev_block.base_fee_per_gas - base_fee_per_gas_delta;
+            const base_fee_per_gas_delta = prev_block.base_fee_per_gas.? * gas_used_delta / parent_gas_target / params.base_fee_max_change_denominator;
+            break :blk prev_block.base_fee_per_gas.? - base_fee_per_gas_delta;
         };
         if (expected_base_fee_per_gas != curr_block.base_fee_per_gas)
             return error.InvalidBaseFee;
@@ -159,7 +159,7 @@ pub const Blockchain = struct {
         defer allocator.free(receipts);
 
         for (block.transactions, 0..) |tx, i| {
-            const tx_info = try checkTransaction(allocator, tx, block.header.base_fee_per_gas, gas_available, tx_signer);
+            const tx_info = try checkTransaction(allocator, tx, block.header.base_fee_per_gas.?, gas_available, tx_signer);
 
             const env: Environment = .{
                 .fork = chain.fork,
@@ -167,7 +167,7 @@ pub const Blockchain = struct {
                 .coinbase = block.header.fee_recipient,
                 .number = block.header.block_number,
                 .gas_limit = block.header.gas_limit,
-                .base_fee_per_gas = block.header.base_fee_per_gas,
+                .base_fee_per_gas = block.header.base_fee_per_gas.?,
                 .gas_price = tx_info.effective_gas_price,
                 .time = block.header.timestamp,
                 .prev_randao = block.header.prev_randao,

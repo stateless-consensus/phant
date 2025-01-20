@@ -28,8 +28,12 @@ pub const BlockHeader = struct {
     extra_data: []const u8,
     prev_randao: Bytes32,
     nonce: [8]u8,
-    base_fee_per_gas: u256,
-    withdrawals_root: Hash32,
+    base_fee_per_gas: ?u256,
+    withdrawals_root: ?Hash32,
+    blob_gas_used: ?u64 = null,
+    excess_blob_gas: ?u64 = null,
+    parent_beacon_root: ?Hash32 = null,
+    request_hash: ?Hash32 = null,
 
     pub fn clone(self: BlockHeader, allocator: Allocator) !BlockHeader {
         var ret = self;
