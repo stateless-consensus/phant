@@ -73,7 +73,7 @@ pub const PayloadID = struct {
 
     pub fn string(pid: *Self, out: []u8) !void {
         if (out.len != 16) {
-            return error.OutputBufferOverflow;
+            return error.InvalidOutputBufferSize;
         }
         _ = try std.fmt.bufPrint(out, "{x}", .{pid.inner});
     }
@@ -193,6 +193,9 @@ const ClientVersionV1 = struct {
     version: []const u8,
     commit: []const u8,
 
+    // Allocates a buffer and write a string representing the version to
+    // it. It is the responsibility of the caller to free the allocated
+    // buffer.
     pub fn string(self: @This(), allocator: std.mem.Allocator) []u8 {
         return std.fmt.allocPrint(allocator, "{}-{}-{}-{}", .{ self.code, self.name, self.version, self.commit });
     }
