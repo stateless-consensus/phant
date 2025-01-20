@@ -68,14 +68,14 @@ pub const PayloadID = struct {
     inner: [8]u8,
 
     pub fn version(pid: *Self) PayloadVersion {
-        return @as(PayloadVersion, pid.inner[0]);
+        return @as(PayloadVersion, @enumFromInt(pid.inner[0]));
     }
 
     pub fn string(pid: *Self, out: []u8) !void {
         if (out.len != 16) {
             return error.OutputBufferOverflow;
         }
-        std.fmt.bufPrint(out, "{:x}", .{pid.inner});
+        _ = try std.fmt.bufPrint(out, "{x}", .{pid.inner});
     }
 
     pub fn is(pid: *Self, versions: []PayloadVersion) bool {
