@@ -51,7 +51,9 @@ pub fn build(b: *std.Build) !void {
     const git_rev = gitRevision(b);
 
     try version_file.writeAll(b.fmt(
-        \\pub const version = "{s}+{s}";
+        \\pub const release = "{s}";
+        \\pub const revision = "{s}";
+        \\pub const version = release ++ "+" ++ revision;
     , .{ version, git_rev }));
 
     // Standard target options allows the person running `zig build` to choose

@@ -21,6 +21,38 @@ const version = @import("version.zig").version;
 const Blockchain = lib.blockchain.Blockchain;
 const Fork = lib.blockchain.Fork;
 
+const supported_methods = .{
+    "engine_forkchoiceUpdatedV1",
+    "engine_forkchoiceUpdatedV2",
+    "engine_forkchoiceUpdatedV3",
+    "engine_forkchoiceUpdatedWithWitnessV1",
+    "engine_forkchoiceUpdatedWithWitnessV2",
+    "engine_forkchoiceUpdatedWithWitnessV3",
+    "engine_exchangeTransitionConfigurationV1",
+    "engine_getPayloadV1",
+    "engine_getPayloadV2",
+    "engine_getPayloadV3",
+    "engine_getPayloadV4",
+    "engine_getBlobsV1",
+    "engine_newPayloadV1",
+    "engine_newPayloadV2",
+    "engine_newPayloadV3",
+    "engine_newPayloadV4",
+    "engine_newPayloadWithWitnessV1",
+    "engine_newPayloadWithWitnessV2",
+    "engine_newPayloadWithWitnessV3",
+    "engine_newPayloadWithWitnessV4",
+    "engine_executeStatelessPayloadV1",
+    "engine_executeStatelessPayloadV2",
+    "engine_executeStatelessPayloadV3",
+    "engine_executeStatelessPayloadV4",
+    "engine_getPayloadBodiesByHashV1",
+    "engine_getPayloadBodiesByHashV2",
+    "engine_getPayloadBodiesByRangeV1",
+    "engine_getPayloadBodiesByRangeV2",
+    "engine_getClientVersionV1",
+};
+
 fn engineAPIHandler(blockchain: *Blockchain, req: *httpz.Request, res: *httpz.Response) !void {
     if (try req.json(engine_api.EngineAPIRequest)) |payload| {
         if (std.mem.eql(u8, payload.method, "engine_newPayloadV2")) {
@@ -28,9 +60,16 @@ fn engineAPIHandler(blockchain: *Blockchain, req: *httpz.Request, res: *httpz.Re
             var execution_payload = try execution_payload_json.to_execution_payload(res.arena);
             defer execution_payload.deinit(res.arena);
             try engine_api.execution_payload.newPayloadV2Handler(blockchain, &execution_payload);
-        } else {
-            res.status = 500;
+            return;
         }
+
+        if (std.mem.eql(u8, payload.method, "engine_getClientVersionV1")) {
+            const ver = try engine_api.execution_payload.getClientVersionV1Handler();
+            try res.json(ver, .{});
+            return;
+        }
+
+        res.status = 500;
     }
 }
 
