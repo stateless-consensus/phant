@@ -20,7 +20,10 @@ pub fn prefixedhex2hash(dst: []u8, src: []const u8) !void {
 // This function turns an optionally '0x'-prefixed hex string
 // to a byte slice
 pub fn prefixedhex2byteslice(allocator: Allocator, src: []const u8) ![]u8 {
-    // TODO catch the 0x0 corner case
+    if (src.len == 0 or (src.len == 3 and std.mem.eql(u8, src, "0x0"))) {
+        return allocator.alloc(u8, 0); // Return an empty slice for "0x0"
+    }
+
     if (src.len < 2 or src.len % 2 != 0) {
         return error.InvalidInput;
     }
@@ -31,6 +34,23 @@ pub fn prefixedhex2byteslice(allocator: Allocator, src: []const u8) ![]u8 {
     _ = try fmt.hexToBytes(dst[0..], src[skip0x..]);
 
     return dst;
+}
+
+test "ensure '0x0' is replaced with an empty slice" {
+    const out = try prefixedhex2byteslice(std.testing.allocator, "0x0");
+    defer std.testing.allocator.free(out);
+    try std.testing.expect(out.len == 0);
+}
+
+test "ensure a odd-length string that is not '0x0' will cause an error" {
+    const out = prefixedhex2byteslice(std.testing.allocator, "0x012");
+    try std.testing.expect(out == error.InvalidInput);
+}
+
+test "ensure a hex string matching the correct pattern can be decoded" {
+    const out = try prefixedhex2byteslice(std.testing.allocator, "0x0123");
+    defer std.testing.allocator.free(out);
+    try std.testing.expect(std.mem.eql(u8, out, &[_]u8{ 0x01, 0x23 }));
 }
 
 // prefixedHexToint turns an optionally '0x'-prefixed hex string to a integer type T.
