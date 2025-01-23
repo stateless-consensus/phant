@@ -38,6 +38,7 @@ pub fn prefixedhex2byteslice(allocator: Allocator, src: []const u8) ![]u8 {
 
 test "ensure '0x0' is replaced with an empty slice" {
     const out = try prefixedhex2byteslice(std.testing.allocator, "0x0");
+    defer std.testing.allocator.free(out);
     try std.testing.expect(out.len == 0);
 }
 
