@@ -111,6 +111,7 @@ pub fn build(b: *std.Build) !void {
         "-Wno-attributes",      "-Wextra-semi",                "-fno-exceptions",
         "-fno-rtti",
         "-Wno-deprecated", // this one is used to remove a warning about char_trait deprecation
+        "-DPROJECT_VERSION=\"0.14.0-dev\"",
     };
     evmone.addCSourceFiles(.{ .root = b.path(""), .files = &[_][]const u8{
         "evmone/lib/evmone/advanced_analysis.cpp",
@@ -129,7 +130,6 @@ pub fn build(b: *std.Build) !void {
     evmone.addIncludePath(b.path("evmone/include"));
     evmone.addIncludePath(b.path("intx/include"));
     evmone.addIncludePath(b.path("ethash/include"));
-    evmone.defineCMacro("PROJECT_VERSION", "\"0.11.0-dev\"");
     evmone.linkLibC();
     evmone.linkLibCpp();
     b.installArtifact(evmone);
