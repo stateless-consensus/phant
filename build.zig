@@ -75,64 +75,7 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
     const mod_httpz = httpz.module("httpz");
-
-    const ethash = b.addStaticLibrary(.{
-        .name = "ethash",
-        .optimize = optimize,
-        .target = target,
-    });
-    const cflags = [_][]const u8{
-        "-Wall",                       "-O3",                    "-fvisibility=hidden",
-        "-fvisibility-inlines-hidden", "-Wpedantic",             "-Werror",
-        "-Wextra",                     "-Wshadow",               "-Wconversion",
-        "-Wsign-conversion",           "-Wno-unknown-pragmas",   "-fno-stack-protector",
-        "-Wimplicit-fallthrough",      "-Wmissing-declarations", "-Wno-attributes",
-        "-Wextra-semi",                "-fno-exceptions",        "-fno-rtti",
-        "-Wno-deprecated", // this one is used to remove a warning about char_trait deprecation
-        "-Wno-strict-prototypes", // this one is used by glue.c to avoid a warning that does not disappear when the prototype is added.
-    };
-    ethash.addCSourceFiles(.{ .root = b.path(""), .files = &[_][]const u8{"ethash/lib/keccak/keccak.c"}, .flags = &cflags });
-    ethash.addIncludePath(b.path("ethash/include"));
-    ethash.linkLibC();
-    ethash.linkLibCpp();
-    b.installArtifact(ethash);
-
-    const evmone = b.addStaticLibrary(.{
-        .name = "evmone",
-        .optimize = optimize,
-        .target = target,
-    });
-    const cppflags = [_][]const u8{
-        "-Wall",                "-std=c++20",                  "-O3",
-        "-fvisibility=hidden",  "-fvisibility-inlines-hidden", "-Wpedantic",
-        "-Werror",              "-Wextra",                     "-Wshadow",
-        "-Wconversion",         "-Wsign-conversion",           "-Wno-unknown-pragmas",
-        "-fno-stack-protector", "-Wimplicit-fallthrough",      "-Wmissing-declarations",
-        "-Wno-attributes",      "-Wextra-semi",                "-fno-exceptions",
-        "-fno-rtti",
-        "-Wno-deprecated", // this one is used to remove a warning about char_trait deprecation
-        "-DPROJECT_VERSION=\"0.14.0-dev\"",
-    };
-    evmone.addCSourceFiles(.{ .root = b.path(""), .files = &[_][]const u8{
-        "evmone/lib/evmone/advanced_analysis.cpp",
-        "evmone/lib/evmone/eof.cpp",
-        "evmone/lib/evmone/advanced_execution.cpp",
-        "evmone/lib/evmone/instructions_calls.cpp",
-        "evmone/lib/evmone/advanced_instructions.cpp",
-        "evmone/lib/evmone/instructions_storage.cpp",
-        "evmone/lib/evmone/baseline.cpp",
-        "evmone/lib/evmone/tracing.cpp",
-        "evmone/lib/evmone/baseline_instruction_table.cpp",
-        "evmone/lib/evmone/vm.cpp",
-    }, .flags = &cppflags });
-
-    evmone.addIncludePath(b.path("evmone/evmc/include"));
-    evmone.addIncludePath(b.path("evmone/include"));
-    evmone.addIncludePath(b.path("intx/include"));
-    evmone.addIncludePath(b.path("ethash/include"));
-    evmone.linkLibC();
-    evmone.linkLibCpp();
-    b.installArtifact(evmone);
+    const zevem = b.dependency("zevem", .{ .target = target, .optimize = optimize });
 
     const zigcli = b.dependency("zigcli", .{});
 
@@ -144,19 +87,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
-    exe.addIncludePath(b.path("evmone/include/evmone"));
-    exe.addIncludePath(b.path("evmone/evmc/include"));
-    if (target.result.cpu.arch == .x86_64) {
-        // On x86_64, some functions are missing from the static library,
-        // so we define dummy functions to make sure that it compiles.
-        exe.addCSourceFile(.{
-            .file = b.path("src/glue.c"),
-            .flags = &cflags,
-        });
-    }
-    exe.linkLibrary(ethash);
-    exe.linkLibrary(evmone);
-    exe.linkLibC();
+    exe.root_module.addImport("zevem", zevem.module("zevem"));
     exe.root_module.addImport("zig-rlp", dep_rlp.module("zig-rlp"));
     exe.linkLibrary(depSecp256k1.artifact("secp256k1"));
     exe.root_module.addImport("zig-eth-secp256k1", mod_secp256k1);
@@ -199,19 +130,6 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
-    unit_tests.addIncludePath(b.path("evmone/include/evmone"));
-    unit_tests.addIncludePath(b.path("evmone/evmc/include"));
-    if (target.result.cpu.arch == .x86_64) {
-        // On x86_64, some functions are missing from the static library,
-        // so we define dummy functions to make sure that it compiles.
-        unit_tests.addCSourceFile(.{
-            .file = b.path("src/glue.c"),
-            .flags = &cflags,
-        });
-    }
-    unit_tests.linkLibrary(ethash);
-    unit_tests.linkLibrary(evmone);
-    unit_tests.linkLibC();
     unit_tests.root_module.addImport("zig-rlp", dep_rlp.module("zig-rlp"));
     unit_tests.linkLibrary(depSecp256k1.artifact("secp256k1"));
     unit_tests.root_module.addImport("zig-eth-secp256k1", mod_secp256k1);
